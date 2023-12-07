@@ -1,0 +1,32 @@
+https://discourse.mcneel.com/t/how-does-kangaroo-solver-work/92075/3?u=quan_li
+
+
+Kangaroo works by minimising total energy.
+
+The various Goals define different energies which are zero under certain geometric conditions.
+
+The Kangaroo solver iteratively moves the points so that the sum of the energies acting on all the points in the system is as low as possible.
+
+For example, the Length goal acts as a spring, following Hooke’s law, so the energy is zero when it is at its rest length, but increases if it is stretched or compressed (in fact the energy increases as the square of the distance by which it is deformed).
+The other goals define energies based on the geometric relations between the set of points they act on. Some of them (such as Length, Angle, Pressure) are based on physical elastic behaviour in a way that their strength can be related precisely to standard material properties and units.
+Other goals are purely geometric in nature - they become zero when some condition such as circle tangency or quad planarity is satisfied, and can be used for finding geometry which satisfies some fabrication constraints.
+Other goals are physically based, but not yet in a calibrated way, such as the Hinge goal for shell bending, so they can model physical behaviour qualitatively, but not in a way where numerical material properties can be so directly applied (though hopefully in a future version this will change).
+
+When the goals do not conflict (for example starting from an arbitrary quadrilateral and making the angles all 90° and the lengths equal), this can work as a geometric constraint solver by making all the energies zero.
+However, for something like finding the deflection of a hanging cable, the length and load goals will not all be satisfied - since one resists the other, so here the solver finds the configuration with the least total potential energy, and if the strengths are set correctly this can be a numerically accurate model of elastic deformation.
+Sometimes you might not even want to reach a single energy minimum, but to make something dynamic like a flag flapping in the wind.
+
+Typically these have been seen as separate things (constraint solving, modelling structural deformation, dynamic animation), needing their own specific approaches, but in Kangaroo they are all tackled with one energy minimisation approach.
+Hence why I called them ‘goals’ as a more general term encompassing constraints, applied loads and elastic resistance.
+
+The actual algorithm the Kangaroo solver uses to perform this minimisation can be seen as a form of dynamic relaxation (DR). This is a name coined by the engineer Alistair Day, to describe a technique where equilibrium is found by combining all the forces acting on each point, and repeatedly moving all the points by small steps until the forces balance and the movement stops. This happens in a dynamic fashion, using momentum, so the movement will oscillate about the equilibrium, and damping is used to remove energy and ensure convergence.
+The writings of the late Mike Barnes are a good place to read more about DR, as he was a pioneer in developing its applications to form-finding, particularly for tensile structures.
+
+In the typical engineering applications of dynamic relaxation, the desired output is just the static equilibrium configuration, so the damping and mass values are chosen just for stability and convergence rather than based on real physical values (note that this does not affect the accuracy of the equilibrium solution, only the route and number of steps taken to get there). Hence it is sometimes referred to as pseudo-dynamics.
+However, (and this is sometimes a cause of confusion), the typical form of DR is essentially identical to a common approach to time integration used in physics engines for games and animation (a popular reference for which is the set of Siggraph course notes from Baraff and Witkin). If you adjust the mode and values for damping and mass appropriately, the same solver can be used for both DR form-finding, and animations of dynamics.
+
+Since version 2, Kangaroo doesn’t actually use the classical form of DR, but a new form where instead of summing accelerations, it combines projections onto the zero energy state of each goal. This draws on conversations I had with the LGG group at EPFL, during the development of their ‘Projective Dynamics’ paper (though the method used in Kangaroo is not exactly the same as the one described in that paper, and incorporates a different approach to the damping to accelerate convergence). I later also learned that this method of combining projections actually dates back much further than the LGG work, and can be seen as a form of the alternating direction method of multipliers (ADMM).
+
+I’ve had a mostly written paper on the solver method developed for Kangaroo sitting on my desktop for years, one day I’ll actually finish and publish it.
+
+I hope the above helps clarify things a little more in the meantime.
