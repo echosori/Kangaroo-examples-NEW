@@ -1,5 +1,7 @@
 https://discourse.mcneel.com/t/how-does-kangaroo-solver-work/92075/3?u=quan_li
 
+Daniel Piker
+2019.11.14
 
 Kangaroo works by minimising total energy.
 
